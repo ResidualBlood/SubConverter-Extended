@@ -663,8 +663,12 @@ int importItems(string_array &target, bool scope_limit, FetchContext context) {
 
     (void)readImportSource(path, scope_limit, context, proxy,
                            settings.cacheConfig, content);
-    if (content.empty())
+    if (content.empty()) {
+      if (resolved_import_view.active &&
+          (resolved_import_view.missing || resolved_import_view.flow_missing))
+        continue;
       return -1;
+    }
 
     ss << content;
     char delimiter = getLineBreak(content);
@@ -727,7 +731,9 @@ int importItems(std::vector<toml::value> &root, const std::string &import_key,
       (void)readImportSource(path, scope_limit, context, proxy,
                              settings.cacheConfig, content);
       if (content.empty()) {
-        failed = true;
+        if (!resolved_import_view.active ||
+            (!resolved_import_view.missing && !resolved_import_view.flow_missing))
+          failed = true;
       } else {
         try {
           auto items = parseToml(content, path);
